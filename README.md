@@ -4,4 +4,4 @@ This is the beginning of the event generator for QuIPS. The intended layout of t
 
 Add any features you think are interesting in a new branch, and we can merge into main once they work.
 
-A small note: The `CLAUDE.md` file is currently written to run python via the uv command [see here](https://docs.astral.sh/uv/), as it's nice for handling package dependencies. If you have a preferred method of doing this, feel free to amend this.
+A small note: The `CLAUDE.md` file is currently written to run python via the uv command [(see here)](https://docs.astral.sh/uv/), as it's nice for handling package dependencies. If you have a preferred method of doing this, feel free to amend this.
