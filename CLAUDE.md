@@ -34,6 +34,10 @@ Full architecture and physics details are in **DESIGN.md**. This file covers dev
 
 ## Repository
 - **GitHub**: https://https://github.com/quantum-measurement-group-lbl/quips_generator (private)
+- **Always work on a new branch** when starting new work (features, experiments, refactors). Never commit directly to `main`.
+  - Branch naming: `feature/<short-description>`, `fix/<short-description>`, `refactor/<short-description>`
+  - Create with: `git checkout -b feature/my-thing`
+  - Open a PR to merge back into `main` once the work is complete and tests pass.
 - Commit at meaningful checkpoints (passing tests, bug fixes, new features)
 - Keep commits focused: one logical change per commit
 
