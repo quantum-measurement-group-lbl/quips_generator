@@ -92,7 +92,23 @@ at model-build time, and outputs are re-dimensionalised before being
 returned to the user.
 
 
-### 2.5 Backends and the model abstraction
+### 2.5 Phase-space output (Wigner)
+
+For a Gaussian state with mean `r̄ = (x̄, p̄)` and covariance `V` (in the
+qgen convention where vacuum has `V = I`, i.e. dimensionless quadratures
+with vacuum variance 1), the Wigner function is
+
+```
+W(x, p) = (1 / (π √det V)) · exp( -(r - r̄)^T V^-1 (r - r̄) )
+```
+
+This is exposed as `qgen.wigner(state, x_grid, p_grid)` consuming a
+`GaussianState(mean, cov)`. A `wigner_auto` helper builds a ±n-σ grid
+from the state for quick visualization. Outside the Gaussian regime the
+SME backend will need to compute Wigner functions from ρ directly
+(deferred).
+
+### 2.6 Backends and the model abstraction
 
 A `Model` object holds:
 
@@ -181,6 +197,9 @@ A `Trajectory` (or `Result`) bundles:
 - `mean`, `cov` — conditional moments (Gaussian backend) or expectation
   values + variances reconstructed from ρ (SME backend)
 - `meta` — model parameters, backend, seed, integrator settings
+- `gaussian_state(t_idx)` — convenience method returning a
+  `GaussianState(mean, cov)` snapshot at a given time index, ready to
+  feed into `qgen.wigner` or future density-matrix constructors
 
 Persistence (HDF5/Zarr) is deferred; results live in memory for now.
 
@@ -196,6 +215,8 @@ q-gen/
 │   ├── units.py               # Unit registry and rescaling helpers
 │   ├── model.py               # Model class: H_0, dissipators, c_m, H_ext
 │   ├── operators.py           # x, p, a, a† builders in Fock basis
+│   ├── state.py               # GaussianState(mean, cov) dataclass
+│   ├── wigner.py              # Wigner evaluator + auto-grid helper
 │   ├── backends/
 │   │   ├── __init__.py
 │   │   ├── base.py            # Backend abstract base class
@@ -210,6 +231,7 @@ q-gen/
 └── tests/
     ├── test_units.py
     ├── test_gaussian_backend.py
+    ├── test_wigner.py
     └── test_steady_state.py
 ```
 

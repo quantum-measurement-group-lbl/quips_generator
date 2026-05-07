@@ -15,6 +15,8 @@ class Result:
     Vxx: NDArray[np.float64]
     Vpp: NDArray[np.float64]
     Cxp: NDArray[np.float64]
+    xc_kalman: NDArray[np.float64] | None = None
+    pc_kalman: NDArray[np.float64] | None = None
     meta: dict = field(default_factory=dict)
 
     def gaussian_state(self, t_idx: int) -> GaussianState:

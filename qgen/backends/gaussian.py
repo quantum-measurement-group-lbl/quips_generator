@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -8,8 +10,8 @@ from qgen.result import Result
 
 def dvariance(model: Model, covariances: NDArray[np.float64]) -> NDArray[np.float64]:
     Vx, Vp, Cxp = covariances
-    omega = model.omega
-    g = model.gamma_meas
+    omega = model.omega_dim
+    g = model.gamma_meas_dim
     eta = model.eta
     dVx = 2 * omega * Cxp - 4 * eta * g * Vx**2
     dVp = -2 * omega * Cxp + 4 * g - 4 * eta * g * Cxp**2
@@ -42,11 +44,47 @@ def steady_state_variances(model: Model) -> tuple[float, float, float]:
     # NOTE: factor 16 (not 4 as in the reference gaussian_oscillator.py) — derived
     # from solving the variance EOMs at steady state; matches the simulator fixed
     # point. The 4 in the reference was inconsistent with its own EOMs.
-    xi = np.sqrt(1.0 + 16.0 * eta * model.gamma_meas**2 / model.omega**2)
+    xi = np.sqrt(1.0 + 16.0 * eta * model.gamma_meas_dim**2 / model.omega_dim**2)
     Vx = 2.0 / (np.sqrt(2.0 * eta) * np.sqrt(xi + 1.0))
     Vp = 2.0 * xi / (np.sqrt(2.0 * eta) * np.sqrt(xi + 1.0))
     Cxp = np.sqrt(xi - 1.0) / (np.sqrt(eta) * np.sqrt(xi + 1.0))
     return float(Vx), float(Vp), float(Cxp)
+
+
+def kalman_filter(
+    model: Model,
+    dt: float,
+    photocurrent: NDArray[np.float64],
+    var_x: NDArray[np.float64],
+    cov_xp: NDArray[np.float64],
+    initial_means: tuple[float, float] = (0.0, 0.0),
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    n_times = photocurrent.shape[0]
+    x_est = np.zeros(n_times)
+    p_est = np.zeros(n_times)
+    x_est[0], p_est[0] = initial_means
+
+    sqrt_2eta_gm = 2.0 * np.sqrt(model.eta * model.gamma_meas_dim)
+    omega = model.omega_dim
+
+    for i in range(1, n_times):
+        x = x_est[i - 1]
+        p = p_est[i - 1]
+        Vx = var_x[i - 1]
+        Cxp = cov_xp[i - 1]
+        # Reconstruct innovation from photocurrent: dY = x dt + dW / sqrt_2eta_gm
+        # photocurrent[i] was stored as drecord/dt where drecord used x at step i-1
+        dY_i = photocurrent[i] * dt
+        dW_i = sqrt_2eta_gm * (dY_i - x * dt)
+
+        # Same semi-implicit Euler step as simulate(): momentum first
+        p_new = p - omega * x * dt + sqrt_2eta_gm * Cxp * dW_i
+        x_new = x + omega * p_new * dt + sqrt_2eta_gm * Vx * dW_i
+
+        x_est[i] = x_new
+        p_est[i] = p_new
+
+    return x_est, p_est
 
 
 class GaussianBackend(Backend):
@@ -63,6 +101,17 @@ class GaussianBackend(Backend):
 
     def steady_state_variances(self) -> tuple[float, float, float]:
         return steady_state_variances(self.model)
+
+    def kalman_filter(
+        self,
+        result: Result,
+        initial_means: tuple[float, float] = (0.0, 0.0),
+    ) -> Result:
+        dt = float(result.meta["dt"])
+        x_est, p_est = kalman_filter(
+            self.model, dt, result.photocurrent, result.Vxx, result.Cxp, initial_means
+        )
+        return replace(result, xc_kalman=x_est, pc_kalman=p_est)
 
     def simulate(
         self,
@@ -93,7 +142,7 @@ class GaussianBackend(Backend):
         photocurrent = np.zeros(n_times)
         xc[0], pc[0] = initial_means
 
-        sqrt_2eta_gm = 2.0 * np.sqrt(m.eta * m.gamma_meas)
+        sqrt_2eta_gm = 2.0 * np.sqrt(m.eta * m.gamma_meas_dim)
 
         for i in range(1, n_times):
             x = xc[i - 1]
@@ -103,8 +152,8 @@ class GaussianBackend(Backend):
             dW_i = dW[i - 1]
 
             # Semi-implicit Euler: momentum first, then position uses p_new
-            p_new = p - m.omega * x * dt + sqrt_2eta_gm * Cxp * dW_i
-            x_new = x + m.omega * p_new * dt + sqrt_2eta_gm * Vx * dW_i
+            p_new = p - m.omega_dim * x * dt + sqrt_2eta_gm * Cxp * dW_i
+            x_new = x + m.omega_dim * p_new * dt + sqrt_2eta_gm * Vx * dW_i
 
             drecord = x * dt + dW_i / sqrt_2eta_gm
 
