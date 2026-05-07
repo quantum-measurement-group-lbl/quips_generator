@@ -53,3 +53,22 @@
   feedback / parametric drive, mechanical damping + thermal-bath terms in
   variance EOMs, multi-trajectory batching, separate SDE integrator module,
   plotting helpers, PSD-of-photocurrent test.
+
+### May 7, 2026: Browser visualization (FastAPI + vanilla JS)
+- New `viz/` package: FastAPI app at `viz/server.py`, static HTML/JS at
+  `viz/static/`. Run with `uv run uvicorn viz.server:app --port 8000`.
+- Endpoints: `GET /api/data` (trajectory + Kalman traces + Wigner grid metadata),
+  `GET /api/wigner/{i}?run_id=...` (single 121x121 frame, lazily fetched),
+  `POST /api/simulate` (re-run with `{omega_hz, mass_kg, gamma_ba_hz, eta}`).
+  A `run_id` versions the in-memory cache; stale frame requests return 409.
+- Frontend (vanilla JS, Plotly.js from CDN): three stacked panels (xc + Kalman,
+  pc + Kalman, Wigner heatmap), parameter form for the four user knobs, time
+  slider + Play/Pause. Wigner uses a *fixed global grid* sized to the trajectory
+  envelope (+/- 4 sigma), with `zmin`/`zmax` pinned across frames so the color
+  scale doesn't jitter during playback. Cursor lines on the line plots track
+  the slider.
+- Server precomputes 200 Wigner frames evenly spaced over the 30-period sim
+  at startup (~30 MB in RAM) and on every `/api/simulate`. Frames stream to
+  the client one at a time as JSON; client caches per `run_id`.
+- Added `fastapi` and `uvicorn` via `uv add`. No new tests; the existing 15
+  pytest tests still pass.
