@@ -9,3 +9,9 @@ wheels/
 # Virtual environments
 .venv
 .DS_Store
+
+# Example outputs
+examples/_out/
+
+# Pytest
+.pytest_cache/
