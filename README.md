@@ -8,4 +8,4 @@ A small note: The project is currently written to run python via the uv command 
 
 ## Using browser visualization
 
-To pull up the browser interface, `git clone` this directory. From inside the project directory, you first `uv sync` to make sure that all the required python packages are installed, then `uv run uvicorn viz.server:app --reload --port 8000`. Then open `http://localhost:8000/` in your browser.
+To pull up the browser interface, `git clone` this directory, and then `cd quips_generator` to go inside the project directory. From there, you first `uv sync` to make sure that all the required python packages are installed, then `uv run uvicorn viz.server:app --reload --port 8000`. Then open `http://localhost:8000/` in your browser.
