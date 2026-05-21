@@ -1,6 +1,10 @@
 """
-Still need to addSpecular vs diffuse collision models based off of alpha
-        (at the moment, we're only modeling average collision impulse as p ~ sqrt(m_g kB T_g))
+Models a gas collision with the bead
+Treated as instantaneous momentum transfer according to Tsang et al. paper
+Integrated into gaussian.py but currently only as a single collision at t/2 --> will need to add a collision frequency model as well here
+
+Also need to addSpecular vs diffuse collision models based off of alpha
+    (at the moment, we're only modeling average collision impulses as p ~ sqrt(m_g kB T_g))
 
 Need to add the collisions rates to model
 
@@ -15,7 +19,8 @@ kB = 1.380649e-23  # J/K
 u = 1.66053906660e-27  # kg (atomic mass unit)
 Tg = 293  # Kelvin  # Taken from Tseng paper
 
-# Gas species library (in atomic mass u)
+# Gas library (in atomic mass u)
+# Feel free to add any other gas types
 GAS_SPECIES = {
     "Kr": 83.798,
     "Xe": 131.293,
