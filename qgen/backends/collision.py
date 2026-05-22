@@ -17,7 +17,8 @@ import numpy as np
 # Physical constants
 kB = 1.380649e-23  # J/K
 u = 1.66053906660e-27  # kg (atomic mass unit)
-Tg = 293  # Kelvin  # Taken from Tseng paper
+tg = 293  # Kelvin  # Taken from Tseng paper
+gamma = 3  # Hz  # Average collision frequency from Tseng paper
 
 # Gas library (in atomic mass u)
 # Feel free to add any other gas types
@@ -32,19 +33,34 @@ GAS_SPECIES = {
 
 # Collision where gas bounces off the particle fully (probability 1 - alpha)
 # Returns the momentum transfer magnitude after the collision [kg m/s]
-def sample_specular_collision(gas: str = "Xe", Tg: float = 293.0):
+def sample_specular_collision(gas: str = "Xe", Tg: float = tg):
     pass
 
 
 # Collision where gas diffuses away from the particle (probability alpha)
 # Returns the dimensionless momentum transfer after the collision
-def sample_diffuse_collision(gas: str = "Xe", Tg: float = 293.0):
+def sample_diffuse_collision(gas: str = "Xe", Tg: float = tg):
     pass
 
 
-def average_collision(gas: str = "Xe", Tg: float = 293.0) -> float:
+# Will return the probability of a collision at each time step
+def collision_probability():
+    pass
+
+
+def average_collision(gas: str = "Xe", Tg: float = tg) -> float:
     mg = GAS_SPECIES[gas] * u  # mass of gas in kg
     return np.sqrt(mg * kB * Tg)  # in kg m/s
+
+
+# Probability of a collision at each time step
+def collision_rate(n_times: int, dt: float, gamma: float = gamma):
+    times = np.zeros(n_times)
+    p_step = gamma * dt
+    for i in range(n_times):
+        if np.random.rand() < p_step:
+            times[i] = 1
+    return times
 
 
 def apply_kick(pc: float, delta_p: float) -> float:

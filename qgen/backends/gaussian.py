@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qgen.backends.base import Backend
-from qgen.backends.collision import apply_kick, average_collision
+from qgen.backends.collision import apply_kick, average_collision, collision_rate
 from qgen.model import Model
 from qgen.result import Result
 
@@ -125,12 +125,13 @@ class GaussianBackend(Backend):
         m = self.model
         n_times = int(2 * np.pi * n_periods / dt)
 
-        # Inserting gas collisions throughout the simulation
-        # For now, only 1 kick halfway through the simulation
-        kick_step = n_times // 2
-        # Possible Parameters: Kr, Xe, SF6, N2, H2 -> refer to GAS_SPECIES in collisions.py
-        # Calculated in SI units so converted to dimensionless units
+        # Randomly inserting gas collisions every second based off of Gamma (default 3 Hz)
+        dt_seconds = dt / m.omega  # convert dt to seconds
+        # Since simulation length is currently only 0.6ms, gamma = 3 usually has no collisions
+        # To test, either increase gamma to ~5000 or increase simulation length in server.py
+        kick_steps = collision_rate(n_times, dt_seconds, gamma=3)
         kick_delta_p = average_collision(gas="SF6") / m.p_zpf
+        # average_collision() Paramters: Kr, Xe, SF6, N2, H2
 
         if use_steady_state_covs:
             Vx_ss, Vp_ss, Cxp_ss = steady_state_variances(m)
@@ -157,7 +158,7 @@ class GaussianBackend(Backend):
             p = pc[i - 1]
 
             # Applying collision at the kick_step
-            if i == kick_step:
+            if kick_steps[i] != 0:
                 p = apply_kick(p, kick_delta_p)
 
             Vx = var_x[i - 1]
