@@ -48,11 +48,6 @@ def collision_probability():
     pass
 
 
-def average_collision(gas: str = "Xe", Tg: float = tg) -> float:
-    mg = GAS_SPECIES[gas] * u  # mass of gas in kg
-    return np.sqrt(mg * kB * Tg)  # in kg m/s
-
-
 # Probability of a collision at each time step
 def collision_rate(n_times: int, dt: float, gamma: float = gamma):
     times = np.zeros(n_times)
@@ -61,6 +56,23 @@ def collision_rate(n_times: int, dt: float, gamma: float = gamma):
         if np.random.rand() < p_step:
             times[i] = 1
     return times
+
+
+def sample_collision(gas: str = "Xe", Tg: float = tg, rng=None) -> float:
+    # using rng as a paramter here because rng is used in guassian.py so we can use the same seed for the entire simulation for reproducibility
+    mg = GAS_SPECIES[gas] * u  # mass of gas in kg
+    if rng is None:
+        rng = np.random.default_rng()
+    # std_dev is sqrt(mg * kB * Tg) which is the average impulse given in Barker et al.
+    std_dev = np.sqrt(mg * kB * Tg)
+    return rng.normal(0.0, std_dev)
+
+
+# Returns the variance of the collision impulse for a given gas and temperature
+def collision_variance(gas: str = "Xe", Tg: float = tg) -> float:
+    # variance is std_dev^2 = (mg * kB * Tg)
+    mg = GAS_SPECIES[gas] * u  # mass of gas in kg
+    return mg * kB * Tg
 
 
 def apply_kick(pc: float, delta_p: float) -> float:

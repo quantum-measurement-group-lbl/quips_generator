@@ -4,7 +4,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qgen.backends.base import Backend
-from qgen.backends.collision import apply_kick, average_collision, collision_rate
+from qgen.backends.collision import (
+    apply_kick,
+    collision_rate,
+    collision_variance,
+    sample_collision,
+)
 from qgen.model import Model
 from qgen.result import Result
 
@@ -130,7 +135,7 @@ class GaussianBackend(Backend):
         # Since simulation length is currently only 0.6ms, gamma = 3 usually has no collisions
         # To test, either increase gamma to ~5000 or increase simulation length in server.py
         kick_steps = collision_rate(n_times, dt_seconds, gamma=3)
-        kick_delta_p = average_collision(gas="SF6") / m.p_zpf
+        kick_variance = collision_variance(gas="SF6") / (m.p_zpf**2)
         # average_collision() Paramters: Kr, Xe, SF6, N2, H2
 
         if use_steady_state_covs:
@@ -157,9 +162,12 @@ class GaussianBackend(Backend):
             x = xc[i - 1]
             p = pc[i - 1]
 
-            # Applying collision at the kick_step
+            # Applying collision and it's variance at the kick_step
             if kick_steps[i] != 0:
+                kick_delta_p = sample_collision(gas="SF6") / m.p_zpf
+                print(f"kick_delta_p: {kick_delta_p}")
                 p = apply_kick(p, kick_delta_p)
+                var_p[i] += kick_variance
 
             Vx = var_x[i - 1]
             Cxp = cov_xp[i - 1]
